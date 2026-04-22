@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Smart Revision Planner</title>
+  <link rel="stylesheet" href="style.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet" />
+</head>
+<body>
+
+  <!-- Background noise + grid -->
+  <div class="bg-grid"></div>
+  <div class="bg-glow glow-1"></div>
+  <div class="bg-glow glow-2"></div>
+
+  <div class="app-wrapper">
+
+    <!-- HEADER -->
+    <header class="header">
+      <div class="header-badge">AI-Powered</div>
+      <h1 class="header-title">Smart Revision<br /><span>Planner</span></h1>
+      <p class="header-sub">Turn exam chaos into a clear, optimized study schedule — automatically.</p>
+    </header>
+
+    <!-- MAIN GRID -->
+    <main class="main-grid">
+
+      <!-- LEFT COLUMN -->
+      <div class="left-col">
+
+        <!-- ADD SUBJECT CARD -->
+        <section class="card" id="add-subject-card">
+          <div class="card-header">
+            <span class="card-icon">✦</span>
+            <h2>Add Subject</h2>
+          </div>
+
+          <div class="form-group">
+            <label for="subject-name">Subject Name</label>
+            <input type="text" id="subject-name" placeholder="e.g. Mathematics" autocomplete="off" />
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="exam-date">Exam Date</label>
+              <input type="date" id="exam-date" />
+            </div>
+            <div class="form-group">
+              <label for="difficulty">Difficulty</label>
+              <div class="custom-select-wrapper">
+                <select id="difficulty">
+                  <option value="easy">Easy</option>
+                  <option value="medium" selected>Medium</option>
+                  <option value="hard">Hard</option>
+                </select>
+                <span class="select-arrow">▾</span>
+              </div>
+            </div>
+          </div>
+
+          <button class="btn btn-primary" id="add-subject-btn">
+            <span class="btn-icon">+</span> Add Subject
+          </button>
+        </section>
+
+        <!-- SUBJECTS LIST CARD -->
+        <section class="card" id="subjects-card">
+          <div class="card-header">
+            <span class="card-icon">◈</span>
+            <h2>Your Subjects</h2>
+            <span class="subject-count" id="subject-count">0</span>
+          </div>
+          <div id="subjects-list" class="subjects-list">
+            <div class="empty-state" id="empty-subjects">
+              <div class="empty-icon">📚</div>
+              <p>No subjects yet. Add one above to get started.</p>
+            </div>
+          </div>
+        </section>
+
+        <!-- GENERATE BUTTON -->
+        <button class="btn btn-generate" id="generate-btn">
+          <span class="btn-sparkle">✦</span>
+          Generate My Plan
+          <span class="btn-sparkle">✦</span>
+        </button>
+
+      </div>
+
+      <!-- RIGHT COLUMN -->
+      <div class="right-col">
+
+        <!-- SCHEDULE CARD -->
+        <section class="card" id="schedule-card">
+          <div class="card-header">
+            <span class="card-icon">◉</span>
+            <h2>Your Revision Schedule</h2>
+            <button class="btn btn-sm" id="regenerate-btn" style="display:none">↺ Regenerate</button>
+          </div>
+
+          <div id="schedule-empty" class="empty-state">
+            <div class="empty-icon">🗓️</div>
+            <p>Your optimized schedule will appear here once you generate a plan.</p>
+          </div>
+
+          <div id="schedule-output" class="schedule-output"></div>
+
+          <!-- STATS BAR -->
+          <div id="stats-bar" class="stats-bar" style="display:none">
+            <div class="stat">
+              <span class="stat-num" id="stat-days">0</span>
+              <span class="stat-label">Study Days</span>
+            </div>
+            <div class="stat-divider"></div>
+            <div class="stat">
+              <span class="stat-num" id="stat-rest">0</span>
+              <span class="stat-label">Rest Days</span>
+            </div>
+            <div class="stat-divider"></div>
+            <div class="stat">
+              <span class="stat-num" id="stat-hours">0h</span>
+              <span class="stat-label">Total Hours</span>
+            </div>
+          </div>
+        </section>
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      Smart Revision Planner &mdash; Study smarter, not harder.
+    </footer>
+  </div>
+
+  <!-- EDIT MODAL -->
+  <div id="edit-modal" class="modal-overlay" style="display:none">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3>Edit Subject</h3>
+        <button class="modal-close" id="modal-close">✕</button>
+      </div>
+      <div class="form-group">
+        <label for="edit-name">Subject Name</label>
+        <input type="text" id="edit-name" />
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label for="edit-date">Exam Date</label>
+          <input type="date" id="edit-date" />
+        </div>
+        <div class="form-group">
+          <label for="edit-difficulty">Difficulty</label>
+          <div class="custom-select-wrapper">
+            <select id="edit-difficulty">
+              <option value="easy">Easy</option>
+              <option value="medium">Medium</option>
+              <option value="hard">Hard</option>
+            </select>
+            <span class="select-arrow">▾</span>
+          </div>
+        </div>
+      </div>
+      <div class="modal-actions">
+        <button class="btn btn-ghost" id="modal-cancel">Cancel</button>
+        <button class="btn btn-primary" id="modal-save">Save Changes</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- TOAST -->
+  <div id="toast" class="toast"></div>
+
+  <script src="script.js"></script>
+</body>
+</html>
