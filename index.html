@@ -1,0 +1,963 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FocusNest — Pomodoro</title>
+<link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,500;0,600;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --cream: #FAF6EF;
+    --warm-bg: #F4EDE0;
+    --card: #FFFBF5;
+    --accent: #C8603A;
+    --accent-soft: #E8987A;
+    --accent-muted: #F5DDD4;
+    --green: #5A7A5A;
+    --green-soft: #C8D9C8;
+    --text: #2C1F14;
+    --text-mid: #6B5040;
+    --text-soft: #A08060;
+    --border: rgba(100,60,20,0.12);
+    --shadow: rgba(100,60,20,0.08);
+  }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--warm-bg);
+    color: var(--text);
+    min-height: 100vh;
+    padding: 0;
+    overflow-x: hidden;
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background:
+      radial-gradient(ellipse at 20% 20%, rgba(200,96,58,0.06) 0%, transparent 50%),
+      radial-gradient(ellipse at 80% 80%, rgba(90,122,90,0.06) 0%, transparent 50%),
+      radial-gradient(ellipse at 60% 10%, rgba(240,200,150,0.1) 0%, transparent 40%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .app {
+    position: relative;
+    z-index: 1;
+    max-width: 420px;
+    margin: 0 auto;
+    padding: 24px 16px 40px;
+  }
+
+  .header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 28px;
+  }
+
+  .logo {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .logo-icon {
+    width: 32px;
+    height: 32px;
+    background: var(--accent);
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+  }
+
+  .logo-text {
+    font-family: 'Lora', serif;
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--text);
+    letter-spacing: -0.3px;
+  }
+
+  .logo-text span {
+    color: var(--accent);
+  }
+
+  .date-badge {
+    font-size: 12px;
+    color: var(--text-soft);
+    background: var(--cream);
+    padding: 4px 10px;
+    border-radius: 20px;
+    border: 1px solid var(--border);
+  }
+
+  .mode-tabs {
+    display: flex;
+    background: var(--cream);
+    border-radius: 14px;
+    padding: 4px;
+    gap: 2px;
+    margin-bottom: 24px;
+    border: 1px solid var(--border);
+  }
+
+  .mode-tab {
+    flex: 1;
+    padding: 8px 6px;
+    border: none;
+    background: transparent;
+    border-radius: 10px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text-soft);
+    cursor: pointer;
+    transition: all 0.2s;
+    text-align: center;
+  }
+
+  .mode-tab.active {
+    background: var(--accent);
+    color: white;
+    box-shadow: 0 2px 8px rgba(200,96,58,0.3);
+  }
+
+  .timer-card {
+    background: var(--card);
+    border-radius: 24px;
+    padding: 32px 24px 28px;
+    border: 1px solid var(--border);
+    box-shadow: 0 4px 24px var(--shadow), 0 1px 4px var(--shadow);
+    margin-bottom: 16px;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .timer-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, var(--accent), var(--accent-soft));
+    border-radius: 24px 24px 0 0;
+    transition: background 0.5s;
+  }
+
+  .timer-card.break-mode::before {
+    background: linear-gradient(90deg, var(--green), #8FAC8F);
+  }
+
+  .session-label {
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--text-soft);
+    margin-bottom: 6px;
+  }
+
+  .task-display {
+    font-family: 'Lora', serif;
+    font-size: 15px;
+    color: var(--text-mid);
+    margin-bottom: 28px;
+    font-style: italic;
+    min-height: 22px;
+  }
+
+  .circle-container {
+    position: relative;
+    width: 200px;
+    height: 200px;
+    margin: 0 auto 28px;
+  }
+
+  .circle-svg {
+    width: 200px;
+    height: 200px;
+    transform: rotate(-90deg);
+  }
+
+  .circle-bg {
+    fill: none;
+    stroke: var(--accent-muted);
+    stroke-width: 6;
+    transition: stroke 0.5s;
+  }
+
+  .circle-progress {
+    fill: none;
+    stroke: var(--accent);
+    stroke-width: 6;
+    stroke-linecap: round;
+    stroke-dasharray: 565.49;
+    stroke-dashoffset: 0;
+    transition: stroke-dashoffset 1s linear, stroke 0.5s;
+  }
+
+  .break-mode .circle-bg { stroke: var(--green-soft); }
+  .break-mode .circle-progress { stroke: var(--green); }
+
+  .timer-text {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    text-align: center;
+  }
+
+  .timer-digits {
+    font-family: 'Lora', serif;
+    font-size: 48px;
+    font-weight: 600;
+    color: var(--text);
+    line-height: 1;
+    letter-spacing: -2px;
+  }
+
+  .timer-sub {
+    font-size: 11px;
+    color: var(--text-soft);
+    margin-top: 4px;
+    letter-spacing: 0.5px;
+  }
+
+  .controls {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+  }
+
+  .btn-secondary {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    border: 1.5px solid var(--border);
+    background: var(--cream);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    color: var(--text-mid);
+    transition: all 0.2s;
+  }
+
+  .btn-secondary:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+
+  .btn-play {
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    border: none;
+    background: var(--accent);
+    color: white;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 22px;
+    transition: all 0.2s;
+    box-shadow: 0 4px 16px rgba(200,96,58,0.4);
+  }
+
+  .btn-play:hover { transform: scale(1.05); }
+  .btn-play:active { transform: scale(0.97); }
+
+  .break-mode .btn-play {
+    background: var(--green);
+    box-shadow: 0 4px 16px rgba(90,122,90,0.4);
+  }
+
+  .stats-row {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+
+  .stat-card {
+    flex: 1;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 14px 12px;
+    text-align: center;
+    box-shadow: 0 2px 8px var(--shadow);
+  }
+
+  .stat-num {
+    font-family: 'Lora', serif;
+    font-size: 24px;
+    font-weight: 600;
+    color: var(--accent);
+    line-height: 1;
+    margin-bottom: 4px;
+  }
+
+  .stat-label {
+    font-size: 11px;
+    color: var(--text-soft);
+    font-weight: 500;
+    letter-spacing: 0.3px;
+  }
+
+  .section-title {
+    font-family: 'Lora', serif;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text-mid);
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .task-input-row {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 10px;
+  }
+
+  .task-input {
+    flex: 1;
+    padding: 10px 14px;
+    border-radius: 12px;
+    border: 1.5px solid var(--border);
+    background: var(--card);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    color: var(--text);
+    outline: none;
+    transition: border-color 0.2s;
+  }
+
+  .task-input:focus {
+    border-color: var(--accent-soft);
+  }
+
+  .task-input::placeholder { color: var(--text-soft); }
+
+  .btn-add {
+    padding: 10px 16px;
+    background: var(--accent-muted);
+    color: var(--accent);
+    border: 1.5px solid rgba(200,96,58,0.2);
+    border-radius: 12px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+    white-space: nowrap;
+  }
+
+  .btn-add:hover { background: var(--accent); color: white; }
+
+  .task-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .task-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 14px;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.2s;
+    box-shadow: 0 1px 4px var(--shadow);
+  }
+
+  .task-item:hover { border-color: var(--accent-soft); }
+  .task-item.active-task { border-color: var(--accent); background: var(--accent-muted); }
+  .task-item.done { opacity: 0.5; }
+
+  .task-check {
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    border: 1.5px solid var(--accent-soft);
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 10px;
+    color: white;
+    transition: all 0.2s;
+    background: transparent;
+  }
+
+  .task-item.done .task-check {
+    background: var(--green);
+    border-color: var(--green);
+  }
+
+  .task-name {
+    flex: 1;
+    font-size: 13px;
+    color: var(--text);
+    transition: all 0.2s;
+  }
+
+  .task-item.done .task-name {
+    text-decoration: line-through;
+    color: var(--text-soft);
+  }
+
+  .task-pomos {
+    font-size: 11px;
+    color: var(--text-soft);
+    background: var(--warm-bg);
+    padding: 2px 8px;
+    border-radius: 20px;
+  }
+
+  .session-dots {
+    display: flex;
+    gap: 6px;
+    justify-content: center;
+    margin-bottom: 24px;
+  }
+
+  .dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--accent-muted);
+    border: 1.5px solid var(--border);
+    transition: all 0.3s;
+  }
+
+  .dot.done { background: var(--accent); border-color: var(--accent); }
+  .dot.current { background: var(--accent); border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-muted); }
+
+  .toast {
+    position: fixed;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%) translateY(-80px);
+    background: var(--text);
+    color: var(--cream);
+    padding: 12px 20px;
+    border-radius: 16px;
+    font-size: 13px;
+    font-weight: 500;
+    transition: transform 0.3s ease;
+    z-index: 1000;
+    white-space: nowrap;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.2);
+  }
+
+  .toast.show { transform: translateX(-50%) translateY(0); }
+
+  .footer-quote {
+    text-align: center;
+    margin-top: 28px;
+    font-family: 'Lora', serif;
+    font-size: 12px;
+    font-style: italic;
+    color: var(--text-soft);
+    line-height: 1.6;
+  }
+  /* ===== DARK MODE ===== */
+body.dark {
+  --cream: #1E1E1E;
+  --warm-bg: #121212;
+  --card: #1F1F1F;
+
+  --accent: #E07A5F;
+  --accent-soft: #F2A68A;
+  --accent-muted: #3A2A25;
+
+  --green: #7FB77E;
+  --green-soft: #2E4030;
+
+  --text: #F5F5F5;
+  --text-mid: #CFCFCF;
+  --text-soft: #9E9E9E;
+
+  --border: rgba(255,255,255,0.08);
+  --shadow: rgba(0,0,0,0.6);
+}
+body.dark::before {
+  background:
+    radial-gradient(ellipse at 20% 20%, rgba(200,96,58,0.12) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 80%, rgba(90,122,90,0.12) 0%, transparent 50%),
+    radial-gradient(ellipse at 60% 10%, rgba(255,255,255,0.05) 0%, transparent 40%);
+}
+/* ===== TOP PROGRESS BAR ===== */
+.top-progress {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 4px;
+  background: rgba(0,0,0,0.05);
+  z-index: 999;
+}
+
+.top-progress-bar {
+  height: 100%;
+  width: 0%;
+  background: linear-gradient(90deg, var(--accent), var(--accent-soft));
+  transition: width 1s linear;
+}
+
+/* ===== FOCUS MODE ===== */
+body.focus .header,
+body.focus .stats-row,
+body.focus .section-title,
+body.focus .task-input-row,
+body.focus .task-list,
+body.focus .footer-quote {
+  display: none;
+}
+
+body.focus .timer-card {
+  margin-top: 80px;
+}
+
+/* ===== FIN SESSION ANIMATION ===== */
+.timer-card.finished {
+  animation: pop 0.6s ease;
+}
+
+@keyframes pop {
+  0% { transform: scale(1); }
+  40% { transform: scale(1.08); }
+  100% { transform: scale(1); }
+}
+body.focus-mode {
+  background: black;
+}
+
+body.focus-mode .timer-card {
+  transform: scale(1.05);
+}
+
+/* ===== TRANSITIONS SMOOTH ===== */
+* {
+  transition: background 0.3s, color 0.3s, border 0.3s;
+}
+</style>
+</head>
+<body>
+
+<div class="toast" id="toast">🪺 Session terminée !</div>
+
+<div class="app">
+
+  <div class="header">
+  <div class="logo">
+    <div class="logo-icon">🪺</div>
+    <div class="logo-text">Focus<span>Nest</span></div>
+  </div>
+
+  <div style="display:flex; align-items:center; gap:8px;">
+   <button class="btn-secondary" onclick="toggleTheme()" title="Mode sombre" id="themeBtn">
+  🌙
+  <button class="btn-secondary" id="focusBtn" onclick="toggleFocusMode()">🎯</button>
+</button>
+    <div class="date-badge" id="dateBadge"></div>
+  </div>
+</div>
+  <div class="mode-tabs">
+    <button class="mode-tab active" onclick="setMode('pomodoro')">🪺 Pomodoro</button>
+    <button class="mode-tab" onclick="setMode('short')">☕ Courte</button>
+    <button class="mode-tab" onclick="setMode('long')">🌿 Longue</button>
+  </div>
+
+  <div class="timer-card" id="timerCard">
+    <div class="session-label" id="sessionLabel">Session de travail</div>
+    <div class="task-display" id="taskDisplay">Sur quoi travailles-tu ?</div>
+
+    <div class="circle-container">
+      <svg class="circle-svg" viewBox="0 0 200 200">
+        <circle class="circle-bg" cx="100" cy="100" r="90" />
+        <circle class="circle-progress" id="circleProgress" cx="100" cy="100" r="90" />
+      </svg>
+      <div class="timer-text">
+        <div class="timer-digits" id="timerDisplay">25:00</div>
+        <div class="timer-sub" id="timerSub">à fond !</div>
+      </div>
+    </div>
+
+    <div class="session-dots" id="sessionDots"></div>
+
+    <div class="controls">
+      <button class="btn-secondary" onclick="resetTimer()" title="Réinitialiser">↺</button>
+      <button class="btn-play" id="playBtn" onclick="toggleTimer()">▶</button>
+      <button class="btn-secondary" onclick="skipSession()" title="Passer">⏭</button>
+    </div>
+  </div>
+
+  <div class="stats-row">
+    <div class="stat-card">
+      <div class="stat-num" id="statPomos">0</div>
+      <div class="stat-label">Pomodoros</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-num" id="statMinutes">0</div>
+      <div class="stat-label">Min. focus</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-num" id="statTasks">0</div>
+      <div class="stat-label">Tâches ✓</div>
+    </div>
+  </div>
+
+  <div class="section-title">📝 Mes tâches</div>
+  <div class="task-input-row">
+    <input class="task-input" id="taskInput" placeholder="Ajouter une tâche..." type="text" onkeydown="if(event.key==='Enter')addTask()">
+    <button class="btn-add" onclick="addTask()">+ Ajouter</button>
+  </div>
+  <div class="task-list" id="taskList"></div>
+
+  <div class="footer-quote" id="quoteEl"></div>
+
+</div>
+
+<script>
+const MODES = {
+  pomodoro: { work: 25*60, label: 'Session de travail', sub: 'à fond !' },
+  short: { work: 5*60, label: 'Petite pause', sub: 'respire...' },
+  long: { work: 15*60, label: 'Grande pause', sub: 'recharge-toi' },
+};
+
+const QUOTES = [
+  "L'apprentissage est un trésor qui suivra son propriétaire partout.",
+  "Concentre-toi sur l'effort, pas sur le résultat.",
+  "Chaque session est un pas vers ta réussite.",
+  "Le secret du succès, c'est la constance."
+];
+
+// ===== VARIABLES =====
+let currentMode = 'pomodoro';
+let totalSeconds = 25 * 60;
+let remaining = 25 * 60;
+let running = false;
+let interval = null;
+let isBreak = false;
+
+let completedPomos = 0;
+let minutesFocused = 0;
+let tasks = [];
+let activeTaskIdx = null;
+let sessionInSession = 0;
+
+let focusMode = false; // ✅ FIX
+let todayKey = new Date().toISOString().slice(0,10);
+
+const CIRCUMFERENCE = 2 * Math.PI * 90;
+
+// ===== LOCAL STORAGE =====
+function saveData() {
+  localStorage.setItem("focusnest-data", JSON.stringify({
+    tasks,
+    completedPomos,
+    minutesFocused,
+    todayKey
+  }));
+}
+
+function loadData() {
+  const data = JSON.parse(localStorage.getItem("focusnest-data"));
+  if (!data) return;
+
+  const today = new Date().toISOString().slice(0,10);
+
+  if (data.todayKey !== today) {
+    completedPomos = 0;
+    minutesFocused = 0;
+  } else {
+    completedPomos = data.completedPomos || 0;
+    minutesFocused = data.minutesFocused || 0;
+  }
+
+  tasks = data.tasks || [];
+}
+
+// ===== THEME =====
+function toggleTheme() {
+  document.body.classList.toggle("dark");
+
+  const isDark = document.body.classList.contains("dark");
+  localStorage.setItem("theme", isDark ? "dark" : "light");
+
+  document.getElementById("themeBtn").textContent = isDark ? "☀️" : "🌙";
+}
+
+// ===== FOCUS MODE (FIX COMPLET) =====
+function toggleFocusMode() {
+  focusMode = !focusMode;
+
+  document.body.classList.toggle("focus-mode", focusMode);
+
+  // ❌ on NE cache PLUS le header
+  // document.querySelector(".header").style.display = ...
+
+  // ✅ on cache seulement les blocs
+  document.querySelector(".stats-row").style.display = focusMode ? "none" : "flex";
+  document.querySelector(".section-title").style.display = focusMode ? "none" : "block";
+  document.querySelector(".task-input-row").style.display = focusMode ? "none" : "flex";
+  document.querySelector(".task-list").style.display = focusMode ? "none" : "flex";
+  document.querySelector(".footer-quote").style.display = focusMode ? "none" : "block";
+
+  // bouton change
+  const btn = document.getElementById("focusBtn");
+  if (btn) btn.textContent = focusMode ? "❌" : "🎯";
+
+  localStorage.setItem("focusMode", focusMode);
+}
+// ===== INIT =====
+function init() {
+  loadData();
+
+  // theme
+  const savedTheme = localStorage.getItem("theme");
+  if (savedTheme === "dark") {
+    document.body.classList.add("dark");
+    const btn = document.getElementById("themeBtn");
+    if (btn) btn.textContent = "☀️";
+  }
+
+  // focus mode restore
+  const savedFocus = localStorage.getItem("focusMode") === "true";
+  if (savedFocus) toggleFocusMode();
+
+  document.getElementById('dateBadge').textContent =
+    new Date().toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric', month: 'short' });
+
+  renderSessionDots();
+  setQuote();
+  renderTasks();
+  updateDisplay();
+}
+
+// ===== QUOTE =====
+function setQuote() {
+  const q = QUOTES[Math.floor(Math.random() * QUOTES.length)];
+  document.getElementById('quoteEl').textContent = `"${q}"`;
+}
+
+// ===== MODE =====
+function setMode(mode) {
+  currentMode = mode;
+
+  document.querySelectorAll('.mode-tab')
+    .forEach((t, i) =>
+      t.classList.toggle('active', ['pomodoro','short','long'][i] === mode)
+    );
+
+  isBreak = (mode !== 'pomodoro');
+  document.getElementById('timerCard').classList.toggle('break-mode', isBreak);
+
+  totalSeconds = MODES[mode].work;
+  remaining = totalSeconds;
+
+  running = false;
+  clearInterval(interval);
+
+  document.getElementById('playBtn').textContent = '▶';
+  document.getElementById('sessionLabel').textContent = MODES[mode].label;
+  document.getElementById('timerSub').textContent = MODES[mode].sub;
+
+  updateDisplay();
+}
+
+// ===== TIMER =====
+function toggleTimer() {
+  if (running) {
+    running = false;
+    clearInterval(interval);
+    document.getElementById('playBtn').textContent = '▶';
+  } else {
+    running = true;
+    document.getElementById('playBtn').textContent = '⏸';
+    interval = setInterval(tick, 1000);
+  }
+}
+
+function tick() {
+  if (remaining <= 0) {
+    clearInterval(interval);
+    running = false;
+    document.getElementById('playBtn').textContent = '▶';
+    onSessionEnd();
+    return;
+  }
+
+  remaining--;
+
+  if (!isBreak && remaining % 60 === 0) {
+    minutesFocused++;
+  }
+
+  updateDisplay();
+  saveData();
+}
+
+// ===== FIN SESSION =====
+function onSessionEnd() {
+
+  const card = document.getElementById('timerCard');
+  card.classList.add('finished');
+  setTimeout(() => card.classList.remove('finished'), 600);
+
+  if (!isBreak) {
+    completedPomos++;
+    sessionInSession++;
+
+    if (activeTaskIdx !== null) {
+      tasks[activeTaskIdx].pomos++;
+    }
+
+    showToast('🍅 Bravo ! Pause !');
+
+    if (sessionInSession >= 4) {
+      sessionInSession = 0;
+      setMode('long');
+    } else {
+      setMode('short');
+    }
+
+  } else {
+    showToast('💪 Reprise !');
+    setMode('pomodoro');
+  }
+
+  renderTasks();
+  renderSessionDots();
+  updateDisplay();
+  saveData();
+}
+
+// ===== UI =====
+function updateDisplay() {
+  const m = Math.floor(remaining / 60).toString().padStart(2, '0');
+  const s = (remaining % 60).toString().padStart(2, '0');
+  document.getElementById('timerDisplay').textContent = `${m}:${s}`;
+
+  const progress = 1 - (remaining / totalSeconds);
+  const offset = CIRCUMFERENCE * (1 - progress);
+  document.getElementById('circleProgress').style.strokeDashoffset = offset;
+
+  const bar = document.getElementById('topProgressBar');
+  if (bar) bar.style.width = (progress * 100) + "%";
+
+  document.getElementById('statPomos').textContent = completedPomos;
+  document.getElementById('statMinutes').textContent = minutesFocused;
+}
+
+// ===== RESET =====
+function resetTimer() {
+  clearInterval(interval);
+  running = false;
+  remaining = totalSeconds;
+  document.getElementById('playBtn').textContent = '▶';
+  updateDisplay();
+}
+
+function skipSession() {
+  clearInterval(interval);
+  running = false;
+  onSessionEnd();
+}
+
+// ===== DOTS =====
+function renderSessionDots() {
+  const dots = document.getElementById('sessionDots');
+  dots.innerHTML = '';
+
+  for (let i = 0; i < 4; i++) {
+    const d = document.createElement('div');
+    d.className =
+      'dot' +
+      (i < completedPomos % 4 ? ' done' : '') +
+      (i === completedPomos % 4 && !isBreak ? ' current' : '');
+    dots.appendChild(d);
+  }
+}
+
+// ===== TASKS =====
+function addTask() {
+  const input = document.getElementById('taskInput');
+  const val = input.value.trim();
+  if (!val) return;
+
+  tasks.push({ name: val, done: false, pomos: 0 });
+  input.value = '';
+
+  renderTasks();
+  saveData();
+}
+
+function renderTasks() {
+  const list = document.getElementById('taskList');
+  list.innerHTML = '';
+
+  tasks.forEach((t, i) => {
+    const el = document.createElement('div');
+    el.className =
+      'task-item' +
+      (t.done ? ' done' : '') +
+      (i === activeTaskIdx ? ' active-task' : '');
+
+    el.innerHTML = `
+      <div class="task-check" onclick="toggleTask(event,${i})">${t.done ? '✓' : ''}</div>
+      <div class="task-name">${t.name}</div>
+      ${t.pomos > 0 ? `<div class="task-pomos">🍅 ${t.pomos}</div>` : ''}
+    `;
+
+    el.onclick = () => selectTask(i);
+    list.appendChild(el);
+  });
+
+  document.getElementById('statTasks').textContent =
+    tasks.filter(t => t.done).length;
+}
+
+function selectTask(i) {
+  activeTaskIdx = activeTaskIdx === i ? null : i;
+
+  document.getElementById('taskDisplay').textContent =
+    activeTaskIdx !== null ? tasks[i].name : 'Sur quoi travailles-tu ?';
+
+  renderTasks();
+}
+
+function toggleTask(e, i) {
+  e.stopPropagation();
+  tasks[i].done = !tasks[i].done;
+  renderTasks();
+  saveData();
+}
+
+// ===== TOAST =====
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 3000);
+}
+
+init();
+</script>
+</body>
+</html>
